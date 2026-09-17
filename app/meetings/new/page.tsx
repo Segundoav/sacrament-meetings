@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react'; // Nota: usaremos useState de React
+import { useState } from 'react'; 
 import { useRouter } from 'next/navigation';
 import { addMeeting } from '@/lib/meetings-db';
 import Link from 'next/link';
