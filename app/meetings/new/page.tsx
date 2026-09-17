@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'form'; // Nota: usaremos useState de React
+import { useState } from 'react'; // Nota: usaremos useState de React
 import { useRouter } from 'next/navigation';
 import { addMeeting } from '@/lib/meetings-db';
 import Link from 'next/link';
