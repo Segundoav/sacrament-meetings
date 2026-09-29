@@ -2,18 +2,20 @@ import { getMeetings } from '@/lib/meetings-db';
 import Link from 'next/link';
 
 interface PageProps {
-  searchParams: Promise<{
+  searchParams?: Promise<{
     query?: string;
     page?: string;
-  }>;
+  }> | {
+    query?: string;
+    page?: string;
+  };
 }
 
 export default async function MeetingsListPage({ searchParams }: PageProps) {
-  const resolvedSearchParams = await searchParams;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const query = resolvedSearchParams?.query || '';
   const currentPage = Number(resolvedSearchParams?.page) || 1;
 
-  // Llamamos a getMeetings asegurando los parámetros correctos que espera la base de datos
   const meetings = await getMeetings(query, currentPage);
 
   return (
