@@ -13,6 +13,7 @@ export default async function MeetingsListPage({ searchParams }: PageProps) {
   const query = resolvedSearchParams?.query || '';
   const currentPage = Number(resolvedSearchParams?.page) || 1;
 
+  // Llamamos a getMeetings asegurando los parámetros correctos que espera la base de datos
   const meetings = await getMeetings(query, currentPage);
 
   return (
@@ -55,16 +56,16 @@ export default async function MeetingsListPage({ searchParams }: PageProps) {
         </form>
 
         <div className="space-y-4">
-          {meetings.length === 0 ? (
+          {!meetings || meetings.length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 text-center text-slate-500">
               No meetings found.
             </div>
           ) : (
-            meetings.map((meeting) => (
+            meetings.map((meeting: any) => (
               <div key={meeting.id} className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition">
                 <div className="flex justify-between items-start mb-3">
                   <span className="text-xs font-semibold px-2.5 py-1 rounded bg-blue-50 text-blue-700 uppercase tracking-wide">
-                    {meeting.meetingType}
+                    {meeting.meetingType || meeting.type || 'REGULAR'}
                   </span>
                   <span className="text-xs text-slate-400 font-mono">#{meeting.id}</span>
                 </div>
