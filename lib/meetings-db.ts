@@ -32,6 +32,7 @@ async function ensureTableExists() {
   const count = Number(countResult[0].count);
 
   if (count === 0) {
+    // ON CONFLICT evita un error si dos solicitudes intentan insertar los datos a la vez
     await sql`
       INSERT INTO meetings (
         date, meeting_type, presiding, conducting, announcements,
@@ -45,11 +46,13 @@ async function ensureTableExists() {
       ('2026-02-01','regular','Bishop Thompson','Brother Nakamura',ARRAY[]::TEXT[],'{"number":1,"title":"The Morning Breaks"}','Sister Gomez','[]',false,'{"number":180,"title":"God Loved Us, So He Sent His Son"}','[{"name":"Brother Perez","topic":"Faith","type":"speaker"}]','{"number":210,"title":"Wandering Souls"}','Sister Smith'),
       ('2026-02-08','regular','Bishop Thompson','Sister Torres',ARRAY[]::TEXT[],'{"number":3,"title":"Now Let Us Rejoice"}','Brother Diaz','[]',false,'{"number":185,"title":"Reverently and Meekly Now"}','[{"name":"Sister Ruiz","topic":"Hope","type":"speaker"}]','{"number":220,"title":"Lord, Dismiss Us with Thy Blessing"}','Brother Brown'),
       ('2026-02-15','testimony','Bishop Thompson','Brother Nakamura',ARRAY[]::TEXT[],'{"number":4,"title":"Truth Eternal"}','Sister Rojas','[]',false,'{"number":190,"title":"In Memory of the Crucified"}','[]','{"number":230,"title":"We Give Thee But Thine Own"}','Sister White'),
-      ('2026-02-22','regular','Bishop Thompson','Sister Torres',ARRAY[]::TEXT[],'{"number":5,"title":"High on the Mountain Top"}','Brother Castro','[]',false,'{"number":195,"title":"As Now We Take the Broken Bread"}','[{"name":"Brother Gomez","topic":"Charity","type":"speaker"}]','{"number":240,"title":"Keep the Commandments"}','Brother Green');
+      ('2026-02-22','regular','Bishop Thompson','Sister Torres',ARRAY[]::TEXT[],'{"number":5,"title":"High on the Mountain Top"}','Brother Castro','[]',false,'{"number":195,"title":"As Now We Take the Broken Bread"}','[{"name":"Brother Gomez","topic":"Charity","type":"speaker"}]','{"number":240,"title":"Keep the Commandments"}','Brother Green')
+      ON CONFLICT (date) DO NOTHING;
     `;
   }
 }
 
+// Devuelve solo UNA página de reuniones (5 por página), filtrada por el texto de búsqueda
 export async function getMeetings(
   query: string = '',
   currentPage: number = 1
@@ -79,6 +82,29 @@ export async function getMeetings(
       OR speakers::text ILIKE ${searchTerm}
     ORDER BY date DESC
     LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+  `;
+  return rows as unknown as SacramentMeeting[];
+}
+
+// Devuelve TODAS las reuniones (sin paginar). Lo usa /api/meetings
+export async function getAllMeetings(): Promise<SacramentMeeting[]> {
+  await ensureTableExists();
+  const rows = await sql`
+    SELECT
+      id,
+      to_char(date, 'YYYY-MM-DD') AS "date",
+      meeting_type                    AS "meetingType",
+      presiding, conducting, announcements,
+      opening_hymn                    AS "openingHymn",
+      opening_prayer                  AS "openingPrayer",
+      ward_business                   AS "wardBusiness",
+      stake_business                  AS "stakeBusiness",
+      sacrament_hymn                  AS "sacramentHymn",
+      speakers,
+      closing_hymn                    AS "closingHymn",
+      closing_prayer                  AS "closingPrayer"
+    FROM meetings
+    ORDER BY date DESC
   `;
   return rows as unknown as SacramentMeeting[];
 }
@@ -129,11 +155,33 @@ export async function addMeeting(
   throw new Error('addMeeting: database implementation coming in Week 04');
 }
 
+// Guarda los cambios de una reunión en la base de datos.
+// Solo actualiza los campos que se pueden editar en el formulario.
 export async function updateMeeting(
   id: number,
   updates: Partial<SacramentMeeting>
 ): Promise<SacramentMeeting | null> {
-  throw new Error('updateMeeting: database implementation coming in Week 04');
+  const current = await getMeetingById(id);
+  if (!current) return null;
+
+  // Mezcla los datos actuales con los cambios recibidos
+  const m = { ...current, ...updates };
+
+  await sql`
+    UPDATE meetings SET
+      date           = ${m.date},
+      meeting_type   = ${m.meetingType},
+      presiding      = ${m.presiding},
+      conducting     = ${m.conducting},
+      opening_hymn   = ${JSON.stringify(m.openingHymn)}::jsonb,
+      opening_prayer = ${m.openingPrayer},
+      sacrament_hymn = ${JSON.stringify(m.sacramentHymn)}::jsonb,
+      closing_hymn   = ${JSON.stringify(m.closingHymn)}::jsonb,
+      closing_prayer = ${m.closingPrayer}
+    WHERE id = ${id}
+  `;
+
+  return getMeetingById(id);
 }
 
 export async function deleteMeeting(id: number): Promise<boolean> {
