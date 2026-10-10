@@ -18,8 +18,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sacrament Meeting Planner",
-  description: "Browse and plan sacrament meeting programs for the ward.",
+  title: {
+    default: "Sacrament Meeting Planner",
+    template: "%s | Sacrament Meeting Planner",
+  },
+  description:
+    "Browse past and upcoming sacrament meeting programs, and find hymns, prayers, speakers and ward business in one place.",
+  metadataBase: new URL("https://sacrament-meetings-khaki-chi.vercel.app"),
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

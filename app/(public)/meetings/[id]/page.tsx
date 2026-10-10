@@ -1,14 +1,48 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getMeetingById } from '@/lib/meetings-db';
 
 const MAX_ID = 2147483647; // el máximo de una columna SERIAL en PostgreSQL
 
-export default async function MeetingDetailPage({
-  params,
-}: {
+type Props = {
   params: Promise<{ id: string }>;
-}) {
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const meetingId = Number(id);
+  
+  if (!/^\d+$/.test(id) || meetingId < 1 || meetingId > MAX_ID) {
+    return {
+      title: 'Meeting Not Found',
+      description: 'The requested sacrament meeting could not be found.',
+    };
+  }
+
+  const meeting = await getMeetingById(meetingId);
+  
+  if (!meeting) {
+    return {
+      title: 'Meeting Not Found',
+      description: 'The requested sacrament meeting could not be found.',
+    };
+  }
+
+  const title = `Sacrament Meeting - ${meeting.date}`;
+  const description = `Sacrament meeting program for ${meeting.date}, presiding: ${meeting.presiding}.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+    },
+  };
+}
+
+export default async function MeetingDetailPage({ params }: Props) {
   // En esta versión de Next.js, params es una Promise: hay que usar await
   const { id } = await params;
   const meetingId = Number(id);
