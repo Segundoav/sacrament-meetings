@@ -3,6 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NavLinks from "@/components/NavLinks";
 
+import Link from "next/link";
+import { auth } from "@/auth";
+import { SignOutButton } from "@/components/sign-out-button";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -14,11 +18,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sacrament Meeting Planner",
-  description: "Browse and plan sacrament meeting programs for the ward.",
+  title: {
+    default: "Sacrament Meeting Planner",
+    template: "%s | Sacrament Meeting Planner",
+  },
+  description:
+    "Browse past and upcoming sacrament meeting programs, and find hymns, prayers, speakers and ward business in one place.",
+  metadataBase: new URL("https://sacrament-meetings-khaki-chi.vercel.app"),
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const session = await auth();
   return (
     <html
       lang="en"
@@ -29,7 +39,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <header className="border-b border-gray-200 bg-white">
             <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-6 py-4">
               <span className="text-lg font-bold">Sacrament Meeting Planner</span>
-              <NavLinks />
+              <div className="flex items-center gap-5">
+                <NavLinks />
+                {session?.user ? (
+                  <SignOutButton />
+                ) : (
+                  <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900">
+                    Login
+                  </Link>
+                )}
+              </div>
             </div>
           </header>
           <div className="flex-1">{children}</div>

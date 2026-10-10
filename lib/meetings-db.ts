@@ -187,3 +187,28 @@ export async function updateMeeting(
 export async function deleteMeeting(id: number): Promise<boolean> {
   throw new Error('deleteMeeting: database implementation coming in Week 04');
 }
+
+// ---------- Usuarios (para el login) ----------
+export async function getUserByEmail(email: string) {
+  // Crea la tabla de usuarios si todavía no existe
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id            SERIAL       PRIMARY KEY,
+      name          VARCHAR(255) NOT NULL,
+      email         VARCHAR(255) NOT NULL UNIQUE,
+      password_hash TEXT         NOT NULL
+    );
+  `;
+
+  const rows = await sql`
+    SELECT id::text AS id, name, email, password_hash AS "passwordHash"
+    FROM users
+    WHERE email = ${email}
+  `;
+
+  return (
+    (rows[0] as
+      | { id: string; name: string; email: string; passwordHash: string }
+      | undefined) ?? null
+  );
+}

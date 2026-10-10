@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { getMeetingById, updateMeeting } from '@/lib/meetings-db';
 import type { Hymn, MeetingType, SacramentMeeting } from '@/lib/types';
 
@@ -55,11 +56,16 @@ function toHymn(value: unknown): Hymn | null {
   return { number, title: title.trim() };
 }
 
-// PUT /api/meetings/1 -> guarda los cambios de una reunión
+// PUT /api/meetings/1 -> guarda los cambios de una reunión (requiere sesión)
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   const meetingId = parseId(id);
   if (meetingId === null) {
